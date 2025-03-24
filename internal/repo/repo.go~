@@ -1,0 +1,30 @@
+package repo
+
+import (
+	"sync"
+)
+
+// Слой репозитория, здесь должны быть все методы, связанные с базой данных
+
+// SQL-запрос на вставку задачи
+
+type repository struct {
+	tasks         map[int]Task
+	autoincrement int
+	mu            sync.RWMutex
+}
+
+// Repository - интерфейс с методом создания задачи
+type Repository interface {
+}
+
+// NewRepository - создание нового экземпляра репозитория с подключением к PostgreSQL
+func NewRepository() (Repository, error) {
+
+	rep := &repository{
+		tasks:         make(map[int]Task),
+		autoincrement: 0,
+	}
+
+	return rep, nil
+}

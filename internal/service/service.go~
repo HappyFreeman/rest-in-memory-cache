@@ -1,0 +1,25 @@
+package service
+
+import (
+	"github.com/HappyFreeman/rest-in-memory-cache/internal/repo"
+	"go.uber.org/zap"
+)
+
+// Слой бизнес-логики. Тут должна быть основная логика сервиса
+
+// Service - интерфейс для бизнес-логики
+type Service interface {
+}
+
+type service struct {
+	repo repo.Repository
+	log  *zap.SugaredLogger
+}
+
+// NewService - конструктор сервиса
+func NewService(repo repo.Repository, logger *zap.SugaredLogger) Service {
+	return &service{
+		repo: repo,
+		log:  logger,
+	}
+}
