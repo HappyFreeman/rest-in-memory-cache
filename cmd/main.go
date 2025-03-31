@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	customLogger "github.com/HappyFreeman/rest-in-memory-cache/pkg/logger"
 	"log"
 	"os"
@@ -35,8 +36,8 @@ func main() {
 		log.Fatal(errors.Wrap(err, "error initializing logger"))
 	}
 
-	// Подключение
-	repository, err := repo.NewRepository()
+	// Подключение к PostgreSQL
+	repository, err := repo.NewRepository(context.Background(), cfg.PostgreSQL)
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "failed to initialize repository"))
 	}

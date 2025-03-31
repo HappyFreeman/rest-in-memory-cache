@@ -52,7 +52,7 @@ func (s *service) CreateTask(ctx *fiber.Ctx) error {
 		Description: req.Description,
 	}
 
-	taskID, err := s.repo.CreateTask(task)
+	taskID, err := s.repo.CreateTask(ctx.Context(), task)
 
 	if err != nil {
 		s.log.Error("Failed to insert task", zap.Error(err))
@@ -78,7 +78,7 @@ func (s *service) GetTask(ctx *fiber.Ctx) error {
 		return dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid request body")
 	}
 
-	task, err := s.repo.GetTask(id)
+	task, err := s.repo.GetTaskById(ctx.Context(), id)
 
 	if err != nil {
 		s.log.Error("Failed to get task", zap.Error(err))
@@ -93,8 +93,10 @@ func (s *service) GetTask(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(response)
 }
 
+// GetTasks - обработчик запроса на получение всех задач
+// TODO: Добавить пагинацию
 func (s *service) GetTasks(ctx *fiber.Ctx) error {
-	tasks, err := s.repo.GetTasks()
+	tasks, err := s.repo.GetTasks(ctx.Context())
 
 	if err != nil {
 		s.log.Error("Failed to get tasks", zap.Error(err))
@@ -117,7 +119,7 @@ func (s *service) DeleteTask(ctx *fiber.Ctx) error {
 		return dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid request body")
 	}
 
-	if err := s.repo.DeleteTask(id); err != nil {
+	if err := s.repo.DeleteTaskById(ctx.Context(), id); err != nil {
 		s.log.Error("Failed to delete task", zap.Error(err))
 		return dto.InternalServerError(ctx)
 	}
@@ -155,7 +157,7 @@ func (s *service) UpdateTask(ctx *fiber.Ctx) error {
 		Description: req.Description,
 	}
 
-	if err := s.repo.UpdateTask(id, task); err != nil {
+	if err := s.repo.UpdateTaskById(ctx.Context(), id, task); err != nil {
 		s.log.Error("Failed to update task", zap.Error(err))
 		return dto.InternalServerError(ctx)
 	}
