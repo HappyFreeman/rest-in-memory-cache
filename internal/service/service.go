@@ -47,12 +47,18 @@ func (s *service) CreateTask(ctx *fiber.Ctx) error {
 		return dto.BadResponseError(ctx, dto.FieldIncorrect, vErr.Error())
 	}
 
+	userId, ok := ctx.Locals("user_id").(int)
+
+	if !ok {
+		return dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid token")
+	}
+
 	task := repo.Task{
 		Title:       req.Title,
 		Description: req.Description,
 	}
 
-	taskID, err := s.repo.CreateTask(ctx.Context(), task)
+	taskID, err := s.repo.CreateTask(ctx.Context(), task, userId)
 
 	if err != nil {
 		s.log.Error("Failed to insert task", zap.Error(err))
@@ -78,7 +84,13 @@ func (s *service) GetTask(ctx *fiber.Ctx) error {
 		return dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid request body")
 	}
 
-	task, err := s.repo.GetTaskById(ctx.Context(), id)
+	userId, ok := ctx.Locals("user_id").(int)
+
+	if !ok {
+		return dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid token")
+	}
+
+	task, err := s.repo.GetTaskById(ctx.Context(), id, userId)
 
 	if err != nil {
 		s.log.Error("Failed to get task", zap.Error(err))
@@ -96,7 +108,14 @@ func (s *service) GetTask(ctx *fiber.Ctx) error {
 // GetTasks - обработчик запроса на получение всех задач
 // TODO: Добавить пагинацию
 func (s *service) GetTasks(ctx *fiber.Ctx) error {
-	tasks, err := s.repo.GetTasks(ctx.Context())
+
+	userId, ok := ctx.Locals("user_id").(int)
+
+	if !ok {
+		return dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid token")
+	}
+
+	tasks, err := s.repo.GetTasks(ctx.Context(), userId)
 
 	if err != nil {
 		s.log.Error("Failed to get tasks", zap.Error(err))
@@ -119,7 +138,13 @@ func (s *service) DeleteTask(ctx *fiber.Ctx) error {
 		return dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid request body")
 	}
 
-	if err := s.repo.DeleteTaskById(ctx.Context(), id); err != nil {
+	userId, ok := ctx.Locals("user_id").(int)
+
+	if !ok {
+		return dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid token")
+	}
+
+	if err := s.repo.DeleteTaskById(ctx.Context(), id, userId); err != nil {
 		s.log.Error("Failed to delete task", zap.Error(err))
 		return dto.InternalServerError(ctx)
 	}
@@ -137,6 +162,12 @@ func (s *service) UpdateTask(ctx *fiber.Ctx) error {
 	if err != nil {
 		s.log.Error("Invalid request body", zap.Error(err))
 		return dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid request body")
+	}
+
+	userId, ok := ctx.Locals("user_id").(int)
+
+	if !ok {
+		return dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid token")
 	}
 
 	var req TaskRequest
@@ -157,7 +188,7 @@ func (s *service) UpdateTask(ctx *fiber.Ctx) error {
 		Description: req.Description,
 	}
 
-	if err := s.repo.UpdateTaskById(ctx.Context(), id, task); err != nil {
+	if err := s.repo.UpdateTaskById(ctx.Context(), id, task, userId); err != nil {
 		s.log.Error("Failed to update task", zap.Error(err))
 		return dto.InternalServerError(ctx)
 	}

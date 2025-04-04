@@ -13,11 +13,11 @@ import (
 
 // SQL-запрос на вставку задачи
 const (
-	insertTaskQuery = `INSERT INTO tasks (title, description) VALUES ($1, $2) RETURNING id;`
-	getTaskQuery    = `SELECT title, description FROM tasks WHERE id = $1;`
-	deleteTaskQuery = `DELETE FROM tasks WHERE id = $1;`
-	updateTaskQuery = `UPDATE tasks SET title = $1, description = $2 WHERE id = $3;`
-	getTasksQuery   = `SELECT title, description FROM tasks;`
+	insertTaskQuery = `INSERT INTO tasks (title, description, user_id) VALUES ($1, $2, $3) RETURNING id;`
+	getTaskQuery    = `SELECT title, description FROM tasks WHERE id = $1 and user_id = $2;`
+	deleteTaskQuery = `DELETE FROM tasks WHERE id = $1 and user_id = $2;`
+	updateTaskQuery = `UPDATE tasks SET title = $1, description = $2 WHERE id = $3 and user_id = $4;`
+	getTasksQuery   = `SELECT title, description FROM tasks WHERE user_id = $1;`
 )
 
 type repository struct {
@@ -26,11 +26,11 @@ type repository struct {
 
 // Repository - интерфейс с методом создания задачи
 type Repository interface {
-	CreateTask(ctx context.Context, task Task) (int, error)
-	GetTaskById(ctx context.Context, id int) (Task, error)
-	DeleteTaskById(ctx context.Context, id int) error
-	UpdateTaskById(ctx context.Context, id int, task Task) error
-	GetTasks(ctx context.Context) ([]Task, error)
+	CreateTask(ctx context.Context, task Task, userId int) (int, error)
+	GetTaskById(ctx context.Context, id int, userId int) (Task, error)
+	DeleteTaskById(ctx context.Context, id int, userId int) error
+	UpdateTaskById(ctx context.Context, id int, task Task, userId int) error
+	GetTasks(ctx context.Context, userId int) ([]Task, error)
 }
 
 // NewRepository - создание нового экземпляра репозитория с подключением к PostgreSQL
@@ -69,9 +69,9 @@ func NewRepository(ctx context.Context, cfg config.PostgreSQL) (Repository, erro
 }
 
 // CreateTask - вставка новой задачи в таблицу tasks
-func (r *repository) CreateTask(ctx context.Context, task Task) (int, error) {
+func (r *repository) CreateTask(ctx context.Context, task Task, userId int) (int, error) {
 	var id int
-	err := r.pool.QueryRow(ctx, insertTaskQuery, task.Title, task.Description).Scan(&id)
+	err := r.pool.QueryRow(ctx, insertTaskQuery, task.Title, task.Description, userId).Scan(&id)
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to insert task")
 	}
@@ -79,7 +79,7 @@ func (r *repository) CreateTask(ctx context.Context, task Task) (int, error) {
 }
 
 // GetTaskById - получение задачи по ее id
-func (r *repository) GetTaskById(ctx context.Context, id int) (Task, error) {
+func (r *repository) GetTaskById(ctx context.Context, id int, userId int) (Task, error) {
 	var task Task
 
 	err := r.pool.QueryRow(ctx, getTaskQuery, id).Scan(&task.Title, &task.Description)
@@ -92,7 +92,7 @@ func (r *repository) GetTaskById(ctx context.Context, id int) (Task, error) {
 }
 
 // DeleteTaskById - удаление задачи по ее id
-func (r *repository) DeleteTaskById(ctx context.Context, id int) error {
+func (r *repository) DeleteTaskById(ctx context.Context, id int, userId int) error {
 	_, err := r.pool.Exec(ctx, deleteTaskQuery, id)
 	if err != nil {
 		return errors.Wrap(err, "failed to delete task")
@@ -101,8 +101,8 @@ func (r *repository) DeleteTaskById(ctx context.Context, id int) error {
 }
 
 // UpdateTaskById - обновление задачи по ее id
-func (r *repository) UpdateTaskById(ctx context.Context, id int, task Task) error {
-	_, err := r.pool.Exec(ctx, updateTaskQuery, task.Title, task.Description, id)
+func (r *repository) UpdateTaskById(ctx context.Context, id int, task Task, userId int) error {
+	_, err := r.pool.Exec(ctx, updateTaskQuery, task.Title, task.Description, id, userId)
 	if err != nil {
 		return errors.Wrap(err, "failed to update task")
 	}
@@ -111,10 +111,10 @@ func (r *repository) UpdateTaskById(ctx context.Context, id int, task Task) erro
 
 // GetTasks - получение всех задач
 // TODO: Реализовать пагинацию
-func (r *repository) GetTasks(ctx context.Context) ([]Task, error) {
+func (r *repository) GetTasks(ctx context.Context, userId int) ([]Task, error) {
 	var tasks []Task
 
-	rows, err := r.pool.Query(ctx, getTasksQuery)
+	rows, err := r.pool.Query(ctx, getTasksQuery, userId)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get tasks")
 	}

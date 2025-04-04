@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/HappyFreeman/rest-in-memory-cache/internal/config"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 
@@ -14,7 +15,7 @@ type Routers struct {
 }
 
 // NewRouters - конструктор для настройки API
-func NewRouters(r *Routers, token string) *fiber.App {
+func NewRouters(r *Routers, token string, cfgJWT config.JWT) *fiber.App {
 	app := fiber.New()
 
 	// Настройка CORS (разрешенные методы, заголовки, авторизация)
@@ -27,7 +28,7 @@ func NewRouters(r *Routers, token string) *fiber.App {
 	}))
 
 	// Группа маршрутов с авторизацией
-	apiGroup := app.Group("/v1", middleware.Authorization(token))
+	apiGroup := app.Group("/v1", middleware.Authorization(token, cfgJWT))
 
 	// Роут для создания задачи
 	apiGroup.Post("/tasks", r.Service.CreateTask)
