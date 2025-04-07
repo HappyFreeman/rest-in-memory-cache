@@ -15,7 +15,7 @@ type Routers struct {
 }
 
 // NewRouters - конструктор для настройки API
-func NewRouters(r *Routers, token string, cfgJWT config.JWT) *fiber.App {
+func NewRouters(r *Routers, cfgJWT config.JWT) *fiber.App {
 	app := fiber.New()
 
 	// Настройка CORS (разрешенные методы, заголовки, авторизация)
@@ -28,7 +28,7 @@ func NewRouters(r *Routers, token string, cfgJWT config.JWT) *fiber.App {
 	}))
 
 	// Группа маршрутов с авторизацией
-	apiGroup := app.Group("/v1", middleware.Authorization(token, cfgJWT))
+	apiGroup := app.Group("/v1", middleware.Authorization(cfgJWT))
 
 	// Роут для создания задачи
 	apiGroup.Post("/tasks", r.Service.CreateTask)

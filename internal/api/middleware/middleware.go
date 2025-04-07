@@ -8,25 +8,26 @@ import (
 
 // Обычный миддлваер
 
-func Authorization(token string, cfgJWT config.JWT) fiber.Handler {
+func Authorization(cfgJWT config.JWT) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// проверка токена вторизации
 		tokenString := c.Get("Authorization")
 
 		if tokenString == "" {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Missing token"})
 		}
 
-		// Убираем Bearer перед токеном
-		tokenString = tokenString[len("Bearer "):]
+		const bearerPrefix = "Bearer "
+		if len(tokenString) <= len(bearerPrefix) || tokenString[:len(bearerPrefix)] != bearerPrefix {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid token format"})
+		}
+
+		tokenString = tokenString[len(bearerPrefix):]
 
 		userId, err := jwt.GetUserId(tokenString, cfgJWT.Secret)
-
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid token"})
 		}
 
-		// Сохраняем user_id в `ctx.Locals`
 		c.Locals("user_id", userId)
 
 		return c.Next()

@@ -46,7 +46,7 @@ func main() {
 	serviceInstance := service.NewService(repository, logger)
 
 	// Инициализация API
-	app := api.NewRouters(&api.Routers{Service: serviceInstance}, cfg.Rest.Token, cfg.JWT)
+	app := api.NewRouters(&api.Routers{Service: serviceInstance}, cfg.JWT)
 
 	// Запуск HTTP-сервера в отдельной горутине
 	go func() {

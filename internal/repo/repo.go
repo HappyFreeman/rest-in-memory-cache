@@ -25,6 +25,7 @@ type repository struct {
 }
 
 // Repository - интерфейс с методом создания задачи
+// mockgen -source=C:/MyProjects/rest-in-memory-cache/internal/repo/repo.go -destination=C:/MyProjects/rest-in-memory-cache/internal/repo/mocks/repository.go -package=mocks
 type Repository interface {
 	CreateTask(ctx context.Context, task Task, userId int) (int, error)
 	GetTaskById(ctx context.Context, id int, userId int) (Task, error)
@@ -82,7 +83,7 @@ func (r *repository) CreateTask(ctx context.Context, task Task, userId int) (int
 func (r *repository) GetTaskById(ctx context.Context, id int, userId int) (Task, error) {
 	var task Task
 
-	err := r.pool.QueryRow(ctx, getTaskQuery, id).Scan(&task.Title, &task.Description)
+	err := r.pool.QueryRow(ctx, getTaskQuery, id, userId).Scan(&task.Title, &task.Description)
 
 	if err != nil {
 		return Task{}, errors.Wrap(err, "failed to get task")
@@ -93,7 +94,7 @@ func (r *repository) GetTaskById(ctx context.Context, id int, userId int) (Task,
 
 // DeleteTaskById - удаление задачи по ее id
 func (r *repository) DeleteTaskById(ctx context.Context, id int, userId int) error {
-	_, err := r.pool.Exec(ctx, deleteTaskQuery, id)
+	_, err := r.pool.Exec(ctx, deleteTaskQuery, id, userId)
 	if err != nil {
 		return errors.Wrap(err, "failed to delete task")
 	}
