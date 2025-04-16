@@ -1,0 +1,160 @@
+openapi: 3.0.0
+info:
+  title: REST IN MEMORY CACHE
+  description: API documentation for REST in memory cache project
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/v1
+    description: Local development server
+
+paths:
+  /tasks:
+    post:
+      summary: Create a new task
+      description: Create a new task and store it in memory
+      operationId: createTask
+      requestBody:
+        description: Task object to be created
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskRequest'
+      responses:
+        '200':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '400':
+          description: Bad request
+        '500':
+          description: Internal server error
+
+    get:
+      summary: Get all tasks
+      description: Retrieve all tasks from memory
+      operationId: getTasks
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '500':
+          description: Internal server error
+
+  /tasks/{id}:
+    get:
+      summary: Get a task by ID
+      description: Retrieve a task using its ID
+      operationId: getTask
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Task retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Invalid ID supplied
+        '404':
+          description: Task not found
+
+    put:
+      summary: Update a task
+      description: Update an existing task using its ID
+      operationId: updateTask
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: integer
+      requestBody:
+        description: Task object to be updated
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskRequest'
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Invalid ID or request body
+        '404':
+          description: Task not found
+
+    delete:
+      summary: Delete a task
+      description: Delete a task using its ID
+      operationId: deleteTask
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Task deleted successfully
+        '400':
+          description: Invalid ID supplied
+        '404':
+          description: Task not found
+
+components:
+  schemas:
+    Task:
+      type: object
+      properties:
+        title:
+          type: string
+          example: "Learn Go"
+        description:
+          type: string
+          example: "Understand the basics of Go programming language"
+
+    TaskRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          example: "Learn Go"
+        description:
+          type: string
+          example: "Understand the basics of Go programming language"
+
+    TaskResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "success"
+        data:
+          type: object
+          properties:
+            task_id:
+              type: integer
+              example: 1
