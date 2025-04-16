@@ -27,11 +27,11 @@ type repository struct {
 // Repository - интерфейс с методом создания задачи
 // mockgen -source=C:/MyProjects/rest-in-memory-cache/internal/repo/repo.go -destination=C:/MyProjects/rest-in-memory-cache/internal/repo/mocks/repository.go -package=mocks
 type Repository interface {
-	CreateTask(ctx context.Context, task Task, userId int) (int, error)
-	GetTaskById(ctx context.Context, id int, userId int) (Task, error)
-	DeleteTaskById(ctx context.Context, id int, userId int) error
-	UpdateTaskById(ctx context.Context, id int, task Task, userId int) error
-	GetTasks(ctx context.Context, userId int) ([]Task, error)
+	CreateTask(ctx context.Context, params CreateTaskParams) (int64, error)
+	GetTaskById(ctx context.Context, params GetTaskByIdParams) (Task, error)
+	DeleteTaskById(ctx context.Context, params DeleteTaskByIdParams) error
+	UpdateTaskById(ctx context.Context, params UpdateTaskParams) error
+	GetTasks(ctx context.Context, params GetTasksParams) ([]Task, error)
 }
 
 // NewRepository - создание нового экземпляра репозитория с подключением к PostgreSQL
@@ -70,9 +70,9 @@ func NewRepository(ctx context.Context, cfg config.PostgreSQL) (Repository, erro
 }
 
 // CreateTask - вставка новой задачи в таблицу tasks
-func (r *repository) CreateTask(ctx context.Context, task Task, userId int) (int, error) {
-	var id int
-	err := r.pool.QueryRow(ctx, insertTaskQuery, task.Title, task.Description, userId).Scan(&id)
+func (r *repository) CreateTask(ctx context.Context, params CreateTaskParams) (int64, error) {
+	var id int64
+	err := r.pool.QueryRow(ctx, insertTaskQuery, params.Title, params.Description, params.UserID).Scan(&id)
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to insert task")
 	}
@@ -80,10 +80,10 @@ func (r *repository) CreateTask(ctx context.Context, task Task, userId int) (int
 }
 
 // GetTaskById - получение задачи по ее id
-func (r *repository) GetTaskById(ctx context.Context, id int, userId int) (Task, error) {
+func (r *repository) GetTaskById(ctx context.Context, params GetTaskByIdParams) (Task, error) {
 	var task Task
 
-	err := r.pool.QueryRow(ctx, getTaskQuery, id, userId).Scan(&task.Title, &task.Description)
+	err := r.pool.QueryRow(ctx, getTaskQuery, params.TaskID, params.UserID).Scan(&task.Title, &task.Description)
 
 	if err != nil {
 		return Task{}, errors.Wrap(err, "failed to get task")
@@ -93,8 +93,8 @@ func (r *repository) GetTaskById(ctx context.Context, id int, userId int) (Task,
 }
 
 // DeleteTaskById - удаление задачи по ее id
-func (r *repository) DeleteTaskById(ctx context.Context, id int, userId int) error {
-	_, err := r.pool.Exec(ctx, deleteTaskQuery, id, userId)
+func (r *repository) DeleteTaskById(ctx context.Context, params DeleteTaskByIdParams) error {
+	_, err := r.pool.Exec(ctx, deleteTaskQuery, params.TaskID, params.UserID)
 	if err != nil {
 		return errors.Wrap(err, "failed to delete task")
 	}
@@ -102,8 +102,8 @@ func (r *repository) DeleteTaskById(ctx context.Context, id int, userId int) err
 }
 
 // UpdateTaskById - обновление задачи по ее id
-func (r *repository) UpdateTaskById(ctx context.Context, id int, task Task, userId int) error {
-	_, err := r.pool.Exec(ctx, updateTaskQuery, task.Title, task.Description, id, userId)
+func (r *repository) UpdateTaskById(ctx context.Context, params UpdateTaskParams) error {
+	_, err := r.pool.Exec(ctx, updateTaskQuery, params.Title, params.Description, params.TaskID, params.UserID)
 	if err != nil {
 		return errors.Wrap(err, "failed to update task")
 	}
@@ -112,10 +112,10 @@ func (r *repository) UpdateTaskById(ctx context.Context, id int, task Task, user
 
 // GetTasks - получение всех задач
 // TODO: Реализовать пагинацию
-func (r *repository) GetTasks(ctx context.Context, userId int) ([]Task, error) {
+func (r *repository) GetTasks(ctx context.Context, params GetTasksParams) ([]Task, error) {
 	var tasks []Task
 
-	rows, err := r.pool.Query(ctx, getTasksQuery, userId)
+	rows, err := r.pool.Query(ctx, getTasksQuery, params.UserID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get tasks")
 	}

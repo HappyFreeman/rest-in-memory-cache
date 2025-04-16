@@ -47,18 +47,17 @@ func (s *service) CreateTask(ctx *fiber.Ctx) error {
 		return dto.BadResponseError(ctx, dto.FieldIncorrect, vErr.Error())
 	}
 
-	userId, ok := ctx.Locals("user_id").(int)
+	userId, ok := ctx.Locals("userId").(int64)
 
 	if !ok {
 		return dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid token")
 	}
 
-	task := repo.Task{
+	taskID, err := s.repo.CreateTask(ctx.Context(), repo.CreateTaskParams{
+		UserID:      userId,
 		Title:       req.Title,
 		Description: req.Description,
-	}
-
-	taskID, err := s.repo.CreateTask(ctx.Context(), task, userId)
+	})
 
 	if err != nil {
 		s.log.Error("Failed to insert task", zap.Error(err))
@@ -84,13 +83,16 @@ func (s *service) GetTask(ctx *fiber.Ctx) error {
 		return dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid request body")
 	}
 
-	userId, ok := ctx.Locals("user_id").(int)
+	userId, ok := ctx.Locals("userId").(int64)
 
 	if !ok {
 		return dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid token")
 	}
 
-	task, err := s.repo.GetTaskById(ctx.Context(), id, userId)
+	task, err := s.repo.GetTaskById(ctx.Context(), repo.GetTaskByIdParams{
+		TaskID: int64(id),
+		UserID: userId,
+	})
 
 	if err != nil {
 		s.log.Error("Failed to get task", zap.Error(err))
@@ -109,13 +111,15 @@ func (s *service) GetTask(ctx *fiber.Ctx) error {
 // TODO: Добавить пагинацию
 func (s *service) GetTasks(ctx *fiber.Ctx) error {
 
-	userId, ok := ctx.Locals("user_id").(int)
+	userId, ok := ctx.Locals("userId").(int64)
 
 	if !ok {
 		return dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid token")
 	}
 
-	tasks, err := s.repo.GetTasks(ctx.Context(), userId)
+	tasks, err := s.repo.GetTasks(ctx.Context(), repo.GetTasksParams{
+		UserID: userId,
+	})
 
 	if err != nil {
 		s.log.Error("Failed to get tasks", zap.Error(err))
@@ -138,13 +142,18 @@ func (s *service) DeleteTask(ctx *fiber.Ctx) error {
 		return dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid request body")
 	}
 
-	userId, ok := ctx.Locals("user_id").(int)
+	userId, ok := ctx.Locals("userId").(int64)
 
 	if !ok {
 		return dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid token")
 	}
 
-	if err := s.repo.DeleteTaskById(ctx.Context(), id, userId); err != nil {
+	err = s.repo.DeleteTaskById(ctx.Context(), repo.DeleteTaskByIdParams{
+		TaskID: int64(id),
+		UserID: userId,
+	})
+
+	if err != nil {
 		s.log.Error("Failed to delete task", zap.Error(err))
 		return dto.InternalServerError(ctx)
 	}
@@ -164,7 +173,7 @@ func (s *service) UpdateTask(ctx *fiber.Ctx) error {
 		return dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid request body")
 	}
 
-	userId, ok := ctx.Locals("user_id").(int)
+	userId, ok := ctx.Locals("userId").(int64)
 
 	if !ok {
 		return dto.BadResponseError(ctx, dto.FieldBadFormat, "Invalid token")
@@ -183,19 +192,24 @@ func (s *service) UpdateTask(ctx *fiber.Ctx) error {
 		return dto.BadResponseError(ctx, dto.FieldIncorrect, vErr.Error())
 	}
 
-	task := repo.Task{
+	err = s.repo.UpdateTaskById(ctx.Context(), repo.UpdateTaskParams{
+		TaskID:      int64(id),
+		UserID:      userId,
 		Title:       req.Title,
 		Description: req.Description,
-	}
+	})
 
-	if err := s.repo.UpdateTaskById(ctx.Context(), id, task, userId); err != nil {
+	if err != nil {
 		s.log.Error("Failed to update task", zap.Error(err))
 		return dto.InternalServerError(ctx)
 	}
 
 	response := dto.Response{
 		Status: "success",
-		Data:   task,
+		Data: repo.Task{
+			Title:       req.Title,
+			Description: req.Description,
+		},
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(response)

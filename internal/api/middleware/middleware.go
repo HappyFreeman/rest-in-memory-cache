@@ -1,14 +1,13 @@
 package middleware
 
 import (
-	"github.com/HappyFreeman/rest-in-memory-cache/internal/config"
 	"github.com/HappyFreeman/rest-in-memory-cache/pkg/jwt"
 	"github.com/gofiber/fiber/v2"
 )
 
 // Обычный миддлваер
 
-func Authorization(cfgJWT config.JWT) fiber.Handler {
+func Authorization(jwtClient jwt.JWTClient) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		tokenString := c.Get("Authorization")
 
@@ -23,12 +22,15 @@ func Authorization(cfgJWT config.JWT) fiber.Handler {
 
 		tokenString = tokenString[len(bearerPrefix):]
 
-		userId, err := jwt.GetUserId(tokenString, cfgJWT.Secret)
+		TokenData, err := jwtClient.GetDataFromToken(&jwt.GetDataFromTokenParams{
+			Token: tokenString,
+		})
+
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid token"})
 		}
 
-		c.Locals("user_id", userId)
+		c.Locals("userId", TokenData.UserId)
 
 		return c.Next()
 	}

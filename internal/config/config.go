@@ -10,11 +10,6 @@ type AppConfig struct {
 	LogLevel   string
 	Rest       Rest
 	PostgreSQL PostgreSQL
-	JWT        JWT
-}
-
-type JWT struct {
-	Secret string `envconfig:"JWT_SECRET" required:"true"`
 }
 
 type Rest struct {

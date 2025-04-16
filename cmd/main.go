@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/HappyFreeman/rest-in-memory-cache/pkg/jwt"
 	customLogger "github.com/HappyFreeman/rest-in-memory-cache/pkg/logger"
 	"log"
 	"os"
@@ -45,8 +46,19 @@ func main() {
 	// Создание сервиса с бизнес-логикой
 	serviceInstance := service.NewService(repository, logger)
 
+	privateKey, err := jwt.ReadPrivateKey()
+	if err != nil {
+		log.Fatal("failed to read private key")
+	}
+	publicKey, err := jwt.ReadPublicKey()
+	if err != nil {
+		log.Fatal("failed to read public key")
+	}
+
+	jwt := jwt.NewJWTClient(privateKey, publicKey)
+
 	// Инициализация API
-	app := api.NewRouters(&api.Routers{Service: serviceInstance}, cfg.JWT)
+	app := api.NewRouters(&api.Routers{Service: serviceInstance}, jwt)
 
 	// Запуск HTTP-сервера в отдельной горутине
 	go func() {
